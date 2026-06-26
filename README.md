@@ -1,4 +1,4 @@
-# Sentinel - public-service voice AI auditor
+# Sentinel - public-service Voice AI auditor
 
 Sentinel autonomously audits AI voice agents used in public services for EU and UK compliance, and produces a cited, evidence-backed report; flagging the agents that never tell citizens they are talking to an AI.
 
