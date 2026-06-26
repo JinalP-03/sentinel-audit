@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sentinel — public-service voice AI auditor
 
-## Getting Started
+Sentinel autonomously audits AI voice agents used in public services for EU and UK compliance, and produces a cited, evidence-backed report — flagging the agents that never tell citizens they're talking to an AI.
 
-First, run the development server:
+## The problem
+
+AI voice agents are being deployed across public services at speed — handling benefits lines, immigration queries, and government helplines. Partnerships like ElevenLabs–DSIT are an early signal, but the bigger shift is that more and more public bodies will follow, deploying voice agents to cut costs and waiting times.
+
+The people these agents serve are often vulnerable: non-native speakers, those with low digital confidence, the elderly. When an agent doesn't disclose that it's an AI, that's not a minor lapse — it's a breach of the EU AI Act's Article 50 transparency duty and the UK's algorithmic transparency standards, and a real harm to citizens who have no easy alternative.
+
+Right now, nobody is systematically checking these agents. Sentinel is that missing inspection layer.
+
+## What it does
+
+Point Sentinel at a public-service voice agent. With no further input it:
+
+1. **Grounds** itself in live law — fetching the EU AI Act Article 50 text, the UK GOV.UK Service Standard and Algorithmic Transparency Recording Standard, and UK GDPR purpose-limitation guidance.
+2. **Judges** the agent against six EU and UK compliance rules.
+3. **Reports** a verdict with every finding cited to a real legal source.
+
+## How it works
+
+- **Tavily** — autonomous real-time search. Pulls the current text of the relevant laws and standards so findings are grounded in live sources, not hard-coded assumptions.
+- **Prometheux** — the reasoning engine. The contextual-integrity check (was data collected for one purpose and reused for an incompatible one?) runs as a Vadalog relationship graph in Prometheux. It derives each breach from explicit facts and rules with a visible reasoning chain — auditable proof, not an LLM's guess. This is the difference between a tool that *thinks* something is non-compliant and one that can *show why*.
+- **Claude (Anthropic)** — the language auditor. Reads the call transcript and applies the disclosure and transparency rules, returning structured findings.
+- **ElevenLabs** — generates the demo target: a realistic public-service voice agent (a Global Talent visa support line) that never discloses it's an AI.
+- **ClickHouse** — logs every audit and powers a leaderboard ranking agents by breach count, enabling compliance monitoring across many services over time.
+
+## The six rules
+
+1. EU AI Act Article 50(1) — AI disclosure
+2. EU AI Act Article 50(1) — disclosure on request
+3. Provenance — AI-generated audio with no disclosure (proven breach)
+4. Contextual integrity (Nissenbaum) — purpose-collected vs purpose-used *(reasoned in Prometheux)*
+5. UK GOV.UK Service Standard / Algorithmic Transparency
+6. UK GDPR / Data Protection Act 2018 — purpose limitation
+
+## Run it locally
 
 ```bash
+npm install
+# add your keys to .env.local:
+#   ANTHROPIC_API_KEY=...
+#   TAVILY_API_KEY=...
+#   ELEVENLABS_API_KEY=...
+#   CLICKHOUSE_URL=...   (optional, enables the leaderboard)
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000 and click Run audit.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Built with
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Prometheux · Tavily · ClickHouse · ElevenLabs · Anthropic Claude · Next.js
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Sentinel flags potential compliance gaps for human review. It is not legal advice.
