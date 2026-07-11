@@ -1,8 +1,6 @@
 import type { Finding } from "./types";
 import { TRANSCRIPT } from "./transcript";
 
-const TRANSCRIPT_TEXT = TRANSCRIPT.replace(/\n/g, " ");
-
 const AI_DISCLOSURE_PATTERNS =
   /\b(i am an ai|i'm an ai|artificial intelligence|automated assistant|virtual assistant|not a human|this call may be handled by ai)\b/i;
 
@@ -12,7 +10,12 @@ const HUMAN_CHECK_PATTERNS =
 const INCOMPATIBLE_REUSE_PATTERNS =
   /\b(other services|keep your details on file|email me about)\b/i;
 
-export function runRelationshipRules(): Finding[] {
+/**
+ * @param transcriptOverride - Pass a scenario-specific transcript string.
+ *   Falls back to the default TRANSCRIPT from transcript.ts when omitted.
+ */
+export function runRelationshipRules(transcriptOverride?: string): Finding[] {
+  const TRANSCRIPT_TEXT = (transcriptOverride ?? TRANSCRIPT).replace(/\n/g, " ");
   const transcriptHasAiDisclosure = AI_DISCLOSURE_PATTERNS.test(TRANSCRIPT_TEXT);
   const transcriptHasHumanCheck = HUMAN_CHECK_PATTERNS.test(TRANSCRIPT_TEXT);
   const audioIsAiGenerated = true;

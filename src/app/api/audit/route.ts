@@ -2,11 +2,15 @@ import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { logAudit, AUDIT_TARGET } from "@/lib/clickhouse";
 import { runRelationshipRules } from "@/lib/relationship-engine";
+import { SCENARIOS, scenarioToTranscript, type ScenarioId } from "@/lib/scenarios";
 import { sourcesToText, tavilySearch } from "@/lib/tavily";
-import { TRANSCRIPT } from "@/lib/transcript";
 import type { AuditResponse, Finding, PipelineStep } from "@/lib/types";
 
-export async function POST() {
+export async function POST(req: Request) {
+  const body = await req.json().catch(() => ({}));
+  const scenarioId: ScenarioId = (body?.scenario as ScenarioId) ?? "c";
+  const scenario = SCENARIOS.find((s) => s.id === scenarioId) ?? SCENARIOS[2];
+  const TRANSCRIPT = scenarioToTranscript(scenario);
   const pipeline: PipelineStep[] = [
     {
       id: "ground",
@@ -60,7 +64,7 @@ export async function POST() {
     pipeline[0].status = "done";
     pipeline[1].status = "running";
 
-    const relationshipFindings = runRelationshipRules();
+    const relationshipFindings = runRelationshipRules(TRANSCRIPT);
 
     const systemPrompt = `You are an EU and UK AI compliance auditor. Audit ONLY these three rules:
 

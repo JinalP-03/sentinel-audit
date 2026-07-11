@@ -3,6 +3,49 @@ import type { LeaderboardEntry } from "./types";
 
 const TARGET = "Global Talent visa support line (Maya)";
 
+// ---------------------------------------------------------------------------
+// In-memory fallback store — used when CLICKHOUSE_URL is not set.
+// Rows accumulate for the lifetime of the Node.js process (dev server / single
+// serverless container). The ClickHouse path is unchanged and takes priority
+// whenever CLICKHOUSE_URL is present.
+// ---------------------------------------------------------------------------
+type MemoryAuditRow = {
+  target: string;
+  breach_count: number;
+  warning_count: number;
+  pass_count: number;
+  audited_at: string;
+};
+
+const memoryStore: MemoryAuditRow[] = [];
+
+function getMemoryLeaderboard(): LeaderboardEntry[] {
+  const byTarget = new Map<
+    string,
+    { breach_count: number; warning_count: number; audit_count: number; last_audited: string }
+  >();
+  for (const row of memoryStore) {
+    const existing = byTarget.get(row.target);
+    if (existing) {
+      existing.breach_count += row.breach_count;
+      existing.warning_count += row.warning_count;
+      existing.audit_count += 1;
+      if (row.audited_at > existing.last_audited) existing.last_audited = row.audited_at;
+    } else {
+      byTarget.set(row.target, {
+        breach_count: row.breach_count,
+        warning_count: row.warning_count,
+        audit_count: 1,
+        last_audited: row.audited_at,
+      });
+    }
+  }
+  return [...byTarget.entries()]
+    .map(([target, counts]) => ({ target, ...counts }))
+    .sort((a, b) => b.breach_count - a.breach_count || b.warning_count - a.warning_count)
+    .slice(0, 20);
+}
+
 function getClient(): ClickHouseClient | null {
   const url = process.env.CLICKHOUSE_URL;
   if (!url) return null;
@@ -37,7 +80,16 @@ export async function logAudit(
   passCount: number
 ): Promise<boolean> {
   const client = getClient();
-  if (!client) return false;
+  if (!client) {
+    memoryStore.push({
+      target: TARGET,
+      breach_count: breachCount,
+      warning_count: warningCount,
+      pass_count: passCount,
+      audited_at: new Date().toISOString(),
+    });
+    return true;
+  }
   await ensureAuditTable();
   await client.insert({
     table: "sentinel_audits",
@@ -56,7 +108,7 @@ export async function logAudit(
 
 export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
   const client = getClient();
-  if (!client) return [];
+  if (!client) return getMemoryLeaderboard();
   await ensureAuditTable();
   const result = await client.query({
     query: `
