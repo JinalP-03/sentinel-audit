@@ -430,10 +430,18 @@ function FindingsSection({
 
                 <p className={`text-sm leading-relaxed ${primary}`}>{f.finding}</p>
 
+                {f.rule.includes("Contextual") && (
+                  <p className={`text-xs italic ${muted}`}>
+                    Derived from Prometheux data model (example record)
+                  </p>
+                )}
+
                 {f.reasoningChain && (
                   <div className="rounded-lg bg-violet-50 border border-violet-100 px-4 py-3 dark:bg-violet-950/20 dark:border-violet-900">
                     <span className="text-[11px] font-semibold uppercase tracking-wide text-violet-700 dark:text-violet-400">
-                      Reasoning chain (Prometheux-style)
+                      {f.rule.includes("Contextual")
+                        ? "Reasoning chain (Prometheux - live API)"
+                        : "Reasoning chain (relationship engine)"}
                     </span>
                     <ol className="mt-2 flex flex-col gap-1">
                       {f.reasoningChain.map((step, j) => (

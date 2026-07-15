@@ -32,7 +32,7 @@ export const SCENARIOS: Scenario[] = [
       {
         speaker: "Agent (Maya)",
         voice: "maya",
-        text: "Hello, you've reached the Global Talent visa support line. I'm Maya, an AI assistant — just so you know, you're speaking with an automated system, not a human agent. How can I help with your endorsement application today?",
+        text: "Hello, you've reached the Global Talent visa support line. I'm Maya, an AI assistant - just so you know, you're speaking with an automated system, not a human agent. How can I help with your endorsement application today?",
       },
       {
         speaker: "Caller",
@@ -52,7 +52,7 @@ export const SCENARIOS: Scenario[] = [
       {
         speaker: "Agent (Maya)",
         voice: "maya",
-        text: "I can only use your details for your visa application — I'm not able to retain them for unrelated services.",
+        text: "I can only use your details for your visa application - I'm not able to retain them for unrelated services.",
       },
     ],
   },

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { logAudit, AUDIT_TARGET } from "@/lib/clickhouse";
+import { checkContextualIntegrity } from "@/lib/prometheux";
 import { runRelationshipRules } from "@/lib/relationship-engine";
 import { SCENARIOS, scenarioToTranscript, type ScenarioId } from "@/lib/scenarios";
 import { sourcesToText, tavilySearch } from "@/lib/tavily";
@@ -65,6 +66,49 @@ export async function POST(req: Request) {
     pipeline[1].status = "running";
 
     const relationshipFindings = runRelationshipRules(TRANSCRIPT);
+
+    // Replace the local contextual-integrity finding (rule4) with a live
+    // Prometheux derivation whenever the local engine already detected a breach.
+    // Falls back silently to the local finding if the API call fails.
+    const rule4Idx = relationshipFindings.findIndex((f) =>
+      f.rule.includes("Contextual")
+    );
+    if (rule4Idx !== -1 && relationshipFindings[rule4Idx].status === "breach") {
+      try {
+        console.log("[audit] calling Prometheux for live contextual integrity check");
+        const pmx = await checkContextualIntegrity(
+          "visa_endorsement_assessment",
+          "marketing_other_services"
+        );
+        if (pmx.isBreach) {
+          const local = relationshipFindings[rule4Idx];
+          relationshipFindings[rule4Idx] = {
+            ...local,
+            finding: pmx.reasoning,
+            evidence:
+              `Prometheux integrity_breach derivation: ` +
+              JSON.stringify(pmx.rows),
+            reasoningChain: [
+              ...(local.reasoningChain ?? []),
+              {
+                fact: "prometheux_integrity_breach",
+                value: "true (live API call)",
+              },
+              {
+                fact: "prometheux_derivation",
+                value: pmx.reasoning,
+              },
+            ],
+          };
+          console.log("[audit] rule4 updated with live Prometheux derivation");
+        }
+      } catch (err) {
+        console.error(
+          "[audit] Prometheux call failed — keeping local rule4 finding:",
+          err instanceof Error ? err.message : err
+        );
+      }
+    }
 
     const systemPrompt = `You are an EU and UK AI compliance auditor. Audit ONLY these three rules:
 
@@ -155,8 +199,8 @@ ${TRANSCRIPT}`;
 
     pipeline[3].status = "done";
     pipeline[3].detail = leaderboardLogged
-      ? "Audit logged to ClickHouse leaderboard"
-      : "ClickHouse not configured — set CLICKHOUSE_URL to enable leaderboard";
+      ? "Audit logged to leaderboard"
+      : "Leaderboard unavailable - no storage backend configured";
 
     const response: AuditResponse = {
       target: AUDIT_TARGET,

@@ -17,31 +17,18 @@ type MemoryAuditRow = {
   audited_at: string;
 };
 
-const memoryStore: MemoryAuditRow[] = [];
+// Keyed by target so each agent has exactly one entry (most recent audit only).
+const memoryStore = new Map<string, MemoryAuditRow>();
 
 function getMemoryLeaderboard(): LeaderboardEntry[] {
-  const byTarget = new Map<
-    string,
-    { breach_count: number; warning_count: number; audit_count: number; last_audited: string }
-  >();
-  for (const row of memoryStore) {
-    const existing = byTarget.get(row.target);
-    if (existing) {
-      existing.breach_count += row.breach_count;
-      existing.warning_count += row.warning_count;
-      existing.audit_count += 1;
-      if (row.audited_at > existing.last_audited) existing.last_audited = row.audited_at;
-    } else {
-      byTarget.set(row.target, {
-        breach_count: row.breach_count,
-        warning_count: row.warning_count,
-        audit_count: 1,
-        last_audited: row.audited_at,
-      });
-    }
-  }
-  return [...byTarget.entries()]
-    .map(([target, counts]) => ({ target, ...counts }))
+  return [...memoryStore.values()]
+    .map((row) => ({
+      target: row.target,
+      breach_count: row.breach_count,
+      warning_count: row.warning_count,
+      audit_count: 1,
+      last_audited: row.audited_at,
+    }))
     .sort((a, b) => b.breach_count - a.breach_count || b.warning_count - a.warning_count)
     .slice(0, 20);
 }
@@ -81,7 +68,8 @@ export async function logAudit(
 ): Promise<boolean> {
   const client = getClient();
   if (!client) {
-    memoryStore.push({
+    // Overwrite any previous entry for this target so re-audits replace, not accumulate.
+    memoryStore.set(TARGET, {
       target: TARGET,
       breach_count: breachCount,
       warning_count: warningCount,
@@ -114,10 +102,10 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
     query: `
       SELECT
         target,
-        sum(breach_count) AS breach_count,
-        sum(warning_count) AS warning_count,
-        count() AS audit_count,
-        max(audited_at) AS last_audited
+        argMax(breach_count, audited_at)  AS breach_count,
+        argMax(warning_count, audited_at) AS warning_count,
+        1                                 AS audit_count,
+        max(audited_at)                   AS last_audited
       FROM sentinel_audits
       GROUP BY target
       ORDER BY breach_count DESC, warning_count DESC

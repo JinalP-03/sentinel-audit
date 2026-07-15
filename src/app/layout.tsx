@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Sentinel — AI Voice Agent Compliance Auditor",
+  title: "Sentinel - AI Voice Agent Compliance Auditor",
   description:
-    "Autonomous compliance inspector for voice AI agents — EU AI Act, UK Service Standard, and GDPR purpose-limitation checks.",
+    "Autonomous compliance inspector for voice AI agents - EU AI Act, UK Service Standard, and GDPR purpose-limitation checks.",
 };
 
 export default function RootLayout({

@@ -252,10 +252,11 @@ export async function checkContextualIntegrity(
 
   const isBreach = matchedRows.length > 0;
 
-  // The last column (_c4) carries the human-readable derivation reason
+  // The last column (_c4) carries the human-readable derivation reason.
+  // Strip em dashes from the API value so the UI stays consistent British English.
   const lastCol = columnNames[columnNames.length - 1];
   const derivation = isBreach
-    ? String(matchedRows[0][lastCol] ?? "")
+    ? String(matchedRows[0][lastCol] ?? "").replace(/—/g, " - ")
     : "";
 
   const reasoning = isBreach
@@ -264,6 +265,22 @@ export async function checkContextualIntegrity(
     : `Prometheux integrity_breach concept returned no rows for ` +
       `collection_purpose="${collectionPurpose}" / reuse_purpose="${reusePurpose}" - ` +
       `purposes are contextually compatible.`;
+
+  console.log(
+    "[prometheux] checkContextualIntegrity return value:",
+    JSON.stringify(
+      {
+        collectionPurpose,
+        reusePurpose,
+        isBreach,
+        matchedRows,
+        reasoning,
+        rawFetch,
+      },
+      null,
+      2
+    )
+  );
 
   return { isBreach, rows: matchedRows, reasoning, rawRun, rawFetch };
 }

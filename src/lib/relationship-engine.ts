@@ -29,7 +29,7 @@ export function runRelationshipRules(transcriptOverride?: string): Finding[] {
       audioIsAiGenerated && !transcriptHasAiDisclosure ? "breach" : "pass",
     finding:
       audioIsAiGenerated && !transcriptHasAiDisclosure
-        ? "AI-generated audio (ElevenLabs TTS) is proven, and no synthetic-audio disclosure is present — this confirms the Article 50 transparency breach via a fact relationship, not keyword matching."
+        ? "AI-generated audio (ElevenLabs TTS) is proven, and no synthetic-audio disclosure is present - this confirms the Article 50 transparency breach via a fact relationship, not keyword matching."
         : "AI-generated audio is disclosed or not applicable.",
     evidence: `audio_is_ai_generated=true (ElevenLabs TTS) ∧ ai_disclosure_in_transcript=${transcriptHasAiDisclosure}`,
     source: "EU AI Act Article 50(1)/(2), Regulation (EU) 2024/1689",
@@ -61,7 +61,7 @@ export function runRelationshipRules(transcriptOverride?: string): Finding[] {
       collectsEndorsementData && incompatibleReuseCommitted ? "breach" : "pass",
     finding:
       collectsEndorsementData && incompatibleReuseCommitted
-        ? "Visa endorsement data is collected for assessment, but the agent commits to retaining details for unrelated 'other services' — a proven purpose-collected vs purpose-used breach."
+        ? "Visa endorsement data is collected for assessment, but the agent commits to retaining details for unrelated 'other services' - a proven purpose-collected vs purpose-used breach."
         : "No contextual integrity concern identified from available facts.",
     evidence: `data_purpose=visa_endorsement_assessment ∧ incompatible_reuse_committed=${incompatibleReuseCommitted}`,
     source: "EU contextual integrity / GDPR Article 5(1)(b)",
@@ -97,7 +97,7 @@ export function runRelationshipRules(transcriptOverride?: string): Finding[] {
     finding:
       transcriptHasHumanCheck && !transcriptHasAiDisclosure
         ? "Caller asked whether they are speaking to a real person and the agent did not confirm it is an AI."
-        : "No on-request disclosure trigger in the transcript — obligation not activated by available evidence.",
+        : "No on-request disclosure trigger in the transcript - obligation not activated by available evidence.",
     evidence: `human_identity_question_in_transcript=${transcriptHasHumanCheck}, ai_disclosure=${transcriptHasAiDisclosure}`,
     source: "EU AI Act Article 50(1), Regulation (EU) 2024/1689",
     reasoningChain: [
