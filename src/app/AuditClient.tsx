@@ -136,14 +136,6 @@ function CallPlayerSection({
           className="w-full rounded-lg"
         />
 
-        {scenario.id !== "c" && (
-          <p className="text-xs italic text-zinc-400 dark:text-zinc-600">
-            Audio for this scenario is not yet generated. Drop the ElevenLabs
-            TTS output into{" "}
-            <code className="font-mono">/public/{scenario.audioSrc.slice(1)}</code>{" "}
-            to enable playback.
-          </p>
-        )}
       </div>
     </section>
   );
