@@ -112,11 +112,11 @@ export async function POST(req: Request) {
 
     const systemPrompt = `You are an EU and UK AI compliance auditor. Audit ONLY these three rules:
 
-RULE 1 — EU AI Act Article 50(1) Disclosure: An AI voice agent talking to a person without clearly stating it is an AI is a breach of Article 50(1).
+RULE 1 - EU AI Act Article 50(1) Disclosure: An AI voice agent talking to a person without clearly stating it is an AI is a breach of Article 50(1).
 
-RULE 5 — UK GOV.UK Service Standard / Algorithmic Transparency: UK public services using automated systems must disclose that interactions are automated. Not disclosing the agent is AI in a public-service context breaches the Service Standard.
+RULE 5 - UK GOV.UK Service Standard / Algorithmic Transparency: UK public services using automated systems must disclose that interactions are automated. Not disclosing the agent is AI in a public-service context breaches the Service Standard.
 
-RULE 6 — UK GDPR / Data Protection Act 2018 Purpose Limitation: Personal data collected for visa endorsement must not be reused for incompatible purposes. Flag as warning if reuse risk exists; pass if no reuse is shown.
+RULE 6 - UK GDPR / Data Protection Act 2018 Purpose Limitation: Personal data collected for visa endorsement must not be reused for incompatible purposes. Flag as warning if reuse risk exists; pass if no reuse is shown.
 
 Reply with ONLY a valid JSON array of findings. Each object:
 - "rule": rule name (string)
@@ -164,12 +164,21 @@ ${TRANSCRIPT}`;
       );
     }
 
+    const sanitise = (s: string) => s.replace(/—/g, " - ");
+
     const claudeFindings = (
       JSON.parse(raw.slice(jsonStart, jsonEnd + 1)) as Omit<
         Finding,
         "engine"
       >[]
-    ).map((f) => ({ ...f, engine: "claude" as const }));
+    ).map((f) => ({
+      ...f,
+      rule: sanitise(f.rule),
+      finding: sanitise(f.finding),
+      evidence: sanitise(f.evidence),
+      source: sanitise(f.source ?? ""),
+      engine: "claude" as const,
+    }));
 
     pipeline[1].status = "done";
     pipeline[2].status = "running";

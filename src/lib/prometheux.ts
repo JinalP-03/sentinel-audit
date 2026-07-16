@@ -247,7 +247,15 @@ export async function checkContextualIntegrity(
         normalise(fact[reuseIdx]) === normReuse
     )
     .map((fact) =>
-      Object.fromEntries(columnNames.map((col, i) => [col, fact[i]]))
+      Object.fromEntries(
+        columnNames.map((col, i) => [
+          col,
+          // Sanitise every cell so em dashes never appear in JSON-rendered evidence
+          typeof fact[i] === "string"
+            ? (fact[i] as string).replace(/—/g, " - ")
+            : fact[i],
+        ])
+      )
     );
 
   const isBreach = matchedRows.length > 0;
