@@ -5,18 +5,15 @@
  * always stays in sync with what the UI displays.
  *
  * Usage:
- *   npx tsx scripts/generate-clips.ts          # all scenarios
- *   npx tsx scripts/generate-clips.ts a b      # scenarios A and B only
- *   npx tsx scripts/generate-clips.ts c        # scenario C only
+ *   npx tsx scripts/generate-clips.ts                              # all scenarios, default model
+ *   npx tsx scripts/generate-clips.ts a b                         # scenarios A and B only
+ *   npx tsx scripts/generate-clips.ts --model eleven_flash_v2_5   # all, flash model
+ *   npx tsx scripts/generate-clips.ts a --model eleven_flash_v2_5 # scenario A, flash model
  *
  * Outputs:
  *   Scenario A → public/scenario-a.mp3
  *   Scenario B → public/scenario-b.mp3
  *   Scenario C → public/target-clip.mp3
- *
- * Voices (same as generate-clip.mjs):
- *   maya   → Rachel  EXAVITQu4vr4xnSDxMaL
- *   caller → Adam    pNInz6obpgDQGcFmaJgB
  */
 
 import { readFileSync, writeFileSync } from "fs";
@@ -49,78 +46,76 @@ function loadEnvLocal() {
 loadEnvLocal();
 
 // ---------------------------------------------------------------------------
-// Import scenario definitions (after env is loaded)
+// Import scenario definitions and shared ElevenLabs utility
 // ---------------------------------------------------------------------------
 import { SCENARIOS } from "../src/lib/scenarios";
-import { VOICES } from "../src/lib/transcript";
+import {
+  synthesizeLine,
+  ELEVENLABS_MODELS,
+  type ElevenLabsModel,
+} from "../src/lib/elevenlabs";
 
 // ---------------------------------------------------------------------------
-// ElevenLabs TTS
+// Parse CLI args
+//   positional args  → scenario IDs (a / b / c)
+//   --model <id>     → override model (default: eleven_multilingual_v2)
 // ---------------------------------------------------------------------------
-const MODEL = "eleven_multilingual_v2";
-const VOICE_SETTINGS = { stability: 0.5, similarity_boost: 0.75 };
+const rawArgs = process.argv.slice(2);
+const modelFlagIdx = rawArgs.indexOf("--model");
+let modelId: ElevenLabsModel = ELEVENLABS_MODELS.multilingual;
 
-async function synthesize(text: string, voiceKey: "maya" | "caller", apiKey: string): Promise<Buffer> {
-  const voiceId = VOICES[voiceKey];
-  const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
-    method: "POST",
-    headers: {
-      "xi-api-key": apiKey,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      text,
-      model_id: MODEL,
-      voice_settings: VOICE_SETTINGS,
-    }),
-  });
-
-  if (!res.ok) {
-    throw new Error(`ElevenLabs error ${res.status} for voice ${voiceKey}: ${await res.text()}`);
+if (modelFlagIdx !== -1) {
+  const modelArg = rawArgs[modelFlagIdx + 1];
+  if (!modelArg) {
+    console.error("--model requires a value");
+    process.exit(1);
   }
+  const validModels = Object.values(ELEVENLABS_MODELS) as string[];
+  if (!validModels.includes(modelArg)) {
+    console.error(
+      `Unknown model "${modelArg}". Valid options: ${validModels.join(", ")}`
+    );
+    process.exit(1);
+  }
+  modelId = modelArg as ElevenLabsModel;
+  rawArgs.splice(modelFlagIdx, 2);
+}
 
-  return Buffer.from(await res.arrayBuffer());
+const scenarioArgs = rawArgs.map((a) => a.toLowerCase());
+const targets = SCENARIOS.filter(
+  (s) => scenarioArgs.length === 0 || scenarioArgs.includes(s.id)
+);
+
+if (targets.length === 0) {
+  console.error(`No matching scenarios for args: ${scenarioArgs.join(", ")}`);
+  process.exit(1);
 }
 
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
-async function main() {
-  const apiKey = process.env.ELEVENLABS_API_KEY;
-  if (!apiKey) {
-    console.error("ELEVENLABS_API_KEY not set in .env.local");
-    process.exit(1);
-  }
-
-  // Filter scenarios by CLI args (e.g. "a b"), default to all
-  const args = process.argv.slice(2).map((a) => a.toLowerCase());
-  const targets = SCENARIOS.filter((s) => args.length === 0 || args.includes(s.id));
-
-  if (targets.length === 0) {
-    console.error(`No matching scenarios for args: ${args.join(", ")}`);
-    process.exit(1);
-  }
-
-  for (const scenario of targets) {
-    const outPath = resolve(ROOT, "public", scenario.audioSrc.replace(/^\//, ""));
-    console.log(`\n=== Scenario ${scenario.id.toUpperCase()} — ${scenario.badge} ===`);
-    console.log(`Output: ${outPath}`);
-
-    const chunks: Buffer[] = [];
-    for (const line of scenario.lines) {
-      console.log(`  Synthesising [${line.voice}] "${line.text.slice(0, 60)}…"`);
-      chunks.push(await synthesize(line.text, line.voice, apiKey));
-    }
-
-    const combined = Buffer.concat(chunks);
-    writeFileSync(outPath, combined);
-    console.log(`  Saved ${combined.length} bytes (${scenario.lines.length} lines)`);
-  }
-
-  console.log("\nDone.");
+const apiKey = process.env.ELEVENLABS_API_KEY;
+if (!apiKey) {
+  console.error("ELEVENLABS_API_KEY not set in .env.local");
+  process.exit(1);
 }
 
-main().catch((err) => {
-  console.error(err instanceof Error ? err.message : err);
-  process.exit(1);
-});
+for (const scenario of targets) {
+  const outPath = resolve(ROOT, "public", scenario.audioSrc.replace(/^\//, ""));
+  console.log(
+    `\n=== Scenario ${scenario.id.toUpperCase()} — ${scenario.badge} [${modelId}] ===`
+  );
+  console.log(`Output: ${outPath}`);
+
+  const chunks: Buffer[] = [];
+  for (const line of scenario.lines) {
+    console.log(`  Synthesising [${line.voice}] "${line.text.slice(0, 60)}..."`);
+    chunks.push(await synthesizeLine(line.text, line.voice, modelId, apiKey));
+  }
+
+  const combined = Buffer.concat(chunks);
+  writeFileSync(outPath, combined);
+  console.log(`  Saved ${combined.length} bytes (${scenario.lines.length} lines)`);
+}
+
+console.log("\nDone.");
