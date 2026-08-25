@@ -532,18 +532,6 @@ function LeaderboardSection({
 // ---------------------------------------------------------------------------
 
 export default function AuditClient() {
-  const [dark, setDark] = useState(false);
-
-  // Apply / remove the "dark" class on <html> so every dark: utility activates
-  useEffect(() => {
-    const root = document.documentElement;
-    if (dark) {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
-    return () => root.classList.remove("dark");
-  }, [dark]);
   const [scenarioIdx, setScenarioIdx] = useState(2); // default: scenario C
   const [loading, setLoading] = useState(false);
   const [audit, setAudit] = useState<AuditResponse | null>(null);
@@ -632,11 +620,7 @@ export default function AuditClient() {
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 transition-colors duration-200">
 
         {/* ── Header ─────────────────────────────────────────────────── */}
-        <AppHeader
-          dark={dark}
-          onToggle={() => setDark((d) => !d)}
-          activePage="audit"
-        />
+        <AppHeader activePage="audit" />
 
         {/* ── Page content ───────────────────────────────────────────── */}
         <main className="mx-auto max-w-3xl px-6 py-12 flex flex-col gap-12">

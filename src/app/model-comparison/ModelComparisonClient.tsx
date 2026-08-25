@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { SCENARIOS } from "@/lib/scenarios";
 import type { CompareResponse, CompareResult } from "@/app/api/tts-compare/route";
 import { AppHeader } from "@/components/AppHeader";
@@ -115,15 +115,6 @@ function LatencySummary({ result }: { result: CompareResponse }) {
 // ---------------------------------------------------------------------------
 
 export default function ModelComparisonClient() {
-  const [dark, setDark] = useState(false);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    if (dark) root.classList.add("dark");
-    else root.classList.remove("dark");
-    return () => root.classList.remove("dark");
-  }, [dark]);
-
   const [scenarioId, setScenarioId] = useState<string>("c");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -159,11 +150,7 @@ export default function ModelComparisonClient() {
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 transition-colors duration-200">
 
-      <AppHeader
-        dark={dark}
-        onToggle={() => setDark((d) => !d)}
-        activePage="comparison"
-      />
+      <AppHeader activePage="comparison" />
 
       <main className="mx-auto max-w-3xl px-6 py-12 flex flex-col gap-12">
 
