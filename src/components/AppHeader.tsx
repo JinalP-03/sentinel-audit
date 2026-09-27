@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useTheme } from "@/components/ThemeProvider";
 
-type Page = "audit" | "comparison";
+type Page = "audit" | "comparison" | "accuracy";
 
 type Props = {
   activePage: Page;
@@ -13,6 +13,7 @@ type Props = {
 const NAV: { label: string; href: string; page: Page }[] = [
   { label: "Audit", href: "/", page: "audit" },
   { label: "Model Comparison", href: "/model-comparison", page: "comparison" },
+  { label: "Accuracy", href: "/accuracy", page: "accuracy" },
 ];
 
 // ---------------------------------------------------------------------------
