@@ -231,10 +231,7 @@ export default function ModelComparisonClient() {
 
             {selectedScenario && (
               <p className={`text-sm leading-relaxed ${muted}`}>
-                {selectedScenario.description}{" "}
-                <span className="text-zinc-400 dark:text-zinc-600">
-                  ({selectedScenario.lines.length} lines)
-                </span>
+                {selectedScenario.description}
               </p>
             )}
 
